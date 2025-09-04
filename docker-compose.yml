@@ -1,0 +1,22 @@
+services:
+  worker-py:
+    build: ./worker-python
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./output/worker1:/app/output
+    container_name: python_worker
+
+  worker-node:
+    build: ./worker-nodejs
+    ports:
+      - "5002:5002"
+    volumes:
+      - ./output/worker2:/app/output
+    container_name: nodejs_worker
+    
+  worker-math:
+    build: ./worker-math
+    ports:
+      - "5003:5003"
+    container_name: math_worker
