@@ -1,33 +1,12 @@
-<div align="center">
-<h1>🚀 Heterogeneous Distributed Task Processor 🚀</h1>
-<p>
+# 🚀 Heterogeneous Distributed Task Processor
+
 A cloud-native application demonstrating a real-world, distributed, and heterogeneous microservices architecture. This project offloads computationally intensive tasks from a master node to specialized worker nodes running on separate cloud servers.
-</p>
 
-<!-- Shields.io Badges -->
+## 🏛️ Project Architecture
 
-<img src="https://www.google.com/search?q=https://img.shields.io/badge/Python-3776AB%3Fstyle%3Dfor-the-badge%26logo%3Dpython%26logoColor%3Dwhite" alt="Python Badge"/>
-<img src="https://www.google.com/search?q=https://img.shields.io/badge/Node.js-339933%3Fstyle%3Dfor-the-badge%26logo%3Dnodedotjs%26logoColor%3Dwhite" alt="Node.js Badge"/>
-<img src="https://www.google.com/search?q=https://img.shields.io/badge/Amazon_AWS-232F3E%3Fstyle%3Dfor-the-badge%26logo%3Damazon-aws%26logoColor%3Dwhite" alt="AWS Badge"/>
-<img src="https://www.google.com/search?q=https://img.shields.io/badge/Docker-2496ED%3Fstyle%3Dfor-the-badge%26logo%3Ddocker%26logoColor%3Dwhite" alt="Docker Badge"/>
-<img src="https://www.google.com/search?q=https://img.shields.io/badge/Streamlit-FF4B4B%3Fstyle%3Dfor-the-badge%26logo%3Dstreamlit%26logoColor%3Dwhite" alt="Streamlit Badge"/>
-</div>
-
-<br>
-
-<!-- IMPORTANT: Replace this with a screenshot of your running Streamlit app! -->
-
-<div align="center">
-<img src="https://www.google.com/search?q=https://i.imgur.com/u3tQY5C.png" alt="Streamlit App Demo" width="850"/>
-</div>
-
-🏛️ Project Architecture
 This project is built on a Master-Worker distributed computing model. The "Master" (or Coordinator) is a user-facing application that delegates tasks to a fleet of specialized "Worker" systems. For this deployment, the Master runs on a local machine, and the Workers run on separate, independent AWS EC2 cloud servers.
 
-<div align="center">
-<h3>Architectural Diagram</h3>
-</div>
-
+```
 +--------------------------+
 |      User's Browser      |
 +--------------------------+
@@ -50,189 +29,172 @@ This project is built on a Master-Worker distributed computing model. The "Maste
 |                                                             |
 |                   AWS Cloud Infrastructure                  |
 +-------------------------------------------------------------+
+```
 
+## 🛠️ Tech Stack
 
-🛠️ Tech Stack
-<div align="center">
-<table>
-<tr>
-<td align="center"><b>Master / Coordinator</b></td>
-<td align="center"><b>Worker 1 (Grayscale)</b></td>
-<td align="center"><b>Worker 2 (Sepia)</b></td>
-<td align="center"><b>Infrastructure & Deployment</b></td>
-</tr>
-<tr>
-<td align="center">
-<img src="https://www.google.com/search?q=https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" width="40" height="40" alt="Python"/>
-<img src="https://www.google.com/search?q=https://streamlit.io/images/brand/streamlit-logo-primary-colormark-darktext.svg" width="40" height="40" alt="Streamlit"/>
-<br>Python & Streamlit
-</td>
-<td align="center">
-<img src="https://www.google.com/search?q=https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" width="40" height="40" alt="Python"/>
-<img src="https://www.google.com/search?q=https://cdn.jsdelivr.net/gh/devicons/devicon/icons/flask/flask-original.svg" width="40" height="40" alt="Flask"/>
-<br>Python & Flask
-</td>
-<td align="center">
-<img src="https://www.google.com/search?q=https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg" width="40" height="40" alt="Node.js"/>
-<img src="https://www.google.com/search?q=https://cdn.jsdelivr.net/gh/devicons/devicon/icons/express/express-original.svg" width="40" height="40" alt="Express"/>
-<br>Node.js & Express
-</td>
-<td align="center">
-<img src="https://www.google.com/search?q=https://cdn.jsdelivr.net/gh/devicons/devicon/icons/amazonwebservices/amazonwebservices-original.svg" width="40" height="40" alt="AWS"/>
-<img src="https://www.google.com/search?q=https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg" width="40" height="40" alt="Docker"/>
-<img src="https://www.google.com/search?q=https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg" width="40" height="40" alt="GitHub"/>
-<br>AWS, Docker, GitHub
-</td>
-</tr>
-</table>
-</div>
+| Master / Coordinator | Worker 1 (Grayscale) | Worker 2 (Sepia) | Infrastructure & Deployment |
+|:-------------------:|:--------------------:|:-----------------:|:---------------------------:|
+| Python & Streamlit | Python & Flask | Node.js & Express | AWS, Docker, GitHub |
 
-📋 Workflow
-User Interaction: The user accesses the Streamlit web application running on the local Master PC and uploads an image.
+## 📋 Workflow
 
-Task Delegation: The Master application splits the image into two horizontal strips.
+1. **User Interaction**: The user accesses the Streamlit web application running on the local Master PC and uploads an image.
 
-Distributed Processing:
+2. **Task Delegation**: The Master application splits the image into two horizontal strips.
 
-The Master sends the top strip via an HTTP POST request over the internet to the Python Worker running on an AWS server.
+3. **Distributed Processing**:
+   - The Master sends the top strip via an HTTP POST request over the internet to the Python Worker running on an AWS server.
+   - Simultaneously, it sends the bottom strip to the Node.js Worker on a separate AWS server.
 
-Simultaneously, it sends the bottom strip to the Node.js Worker on a separate AWS server.
+4. **Independent Execution**:
+   - The Python worker receives its image strip, uses the Pillow library to convert it to grayscale, and sends the processed image data back in the HTTP response.
+   - The Node.js worker receives its strip, uses the Jimp library to apply a sepia filter, and sends its processed image data back.
 
-Independent Execution:
+5. **Result Aggregation**: The Master application receives the two processed image strips from the workers.
 
-The Python worker receives its image strip, uses the Pillow library to convert it to grayscale, and sends the processed image data back in the HTTP response.
+6. **Final Output**: The Master stitches the two strips back together into a single image and displays the final result to the user in the web browser.
 
-The Node.js worker receives its strip, uses the Jimp library to apply a sepia filter, and sends its processed image data back.
+## 🚀 Setup and Execution
 
-Result Aggregation: The Master application receives the two processed image strips from the workers.
-
-Final Output: The Master stitches the two strips back together into a single image and displays the final result to the user in the web browser.
-
-🚀 Setup and Execution
 Follow these steps to deploy and run the entire distributed system.
 
-Part 1: Deploying the Workers on AWS
-Prerequisites:
+### Part 1: Deploying the Workers on AWS
 
-An AWS account with Free Tier access.
+#### Prerequisites
+- An AWS account with Free Tier access
+- This project cloned and pushed to your own GitHub repository
 
-This project cloned and pushed to your own GitHub repository.
+#### Launch EC2 Instances
 
-Launch EC2 Instances:
+1. Log in to the AWS EC2 Dashboard and launch two `t2.micro` instances using the Ubuntu OS Image (AMI).
 
-Log in to the AWS EC2 Dashboard and launch two t2.micro instances using the Ubuntu OS Image (AMI).
+2. Create a new key pair (e.g., `my-key.pem`) and save it securely.
 
-Create a new key pair (e.g., my-key.pem) and save it securely.
+3. Create a new security group (firewall) and add the following inbound rules:
 
-Create a new security group (firewall) and add the following inbound rules:
-| Type         | Port Range | Source      |
-|--------------|------------|-------------|
-| SSH          | 22         | My IP       |
-| Custom TCP   | 5001       | 0.0.0.0/0 |
-| Custom TCP   | 5002       | 0.0.0.0/0 |
+   | Type       | Port Range | Source    |
+   |------------|------------|-----------|
+   | SSH        | 22         | My IP     |
+   | Custom TCP | 5001       | 0.0.0.0/0 |
+   | Custom TCP | 5002       | 0.0.0.0/0 |
 
-Launch both instances using the same key pair and security group.
+4. Launch both instances using the same key pair and security group.
 
-Deploy Code to Each Server:
+#### Deploy Code to Each Server
 
 Find the Public IPv4 address for each of your EC2 instances.
 
-For the Python Worker:
+**For the Python Worker:**
 
-SSH into the server: ssh -i "path/to/my-key.pem" ubuntu@<PYTHON_WORKER_IP>
+1. SSH into the server:
+   ```bash
+   ssh -i "path/to/my-key.pem" ubuntu@<PYTHON_WORKER_IP>
+   ```
 
-Run the setup commands:
+2. Run the setup commands:
+   ```bash
+   sudo apt update
+   sudo apt install git python3-pip python3-venv libjpeg-dev zlib1g-dev -y
+   git clone <your_github_repo_url>
+   cd your-repository-name/worker-python
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   nohup python3 app.py &
+   ```
 
-sudo apt update
-sudo apt install git python3-pip python3-venv libjpeg-dev zlib1g-dev -y
-git clone <your_github_repo_url>
-cd your-repository-name/worker-python
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-nohup python3 app.py &
+**For the Node.js Worker:**
 
-For the Node.js Worker:
+1. Open a new terminal and SSH into the second server:
+   ```bash
+   ssh -i "path/to/my-key.pem" ubuntu@<NODEJS_WORKER_IP>
+   ```
 
-Open a new terminal and SSH into the second server: ssh -i "path/to/my-key.pem" ubuntu@<NODEJS_WORKER_IP>
+2. Run the setup commands:
+   ```bash
+   sudo apt update
+   sudo apt install git nodejs npm -y
+   git clone <your_github_repo_url>
+   cd your-repository-name/worker-nodejs
+   npm install
+   nohup node server.js &
+   ```
 
-Run the setup commands:
+### Part 2: Running the Master Application Locally
 
-sudo apt update
-sudo apt install git nodejs npm -y
-git clone <your_github_repo_url>
-cd your-repository-name/worker-nodejs
-npm install
-nohup node server.js &
+#### Configure IP Addresses
+1. On your local computer, open the `coordinator/app.py` file.
+2. Update the `WORKER_URLS` list with the public IPs of your AWS servers.
 
-Part 2: Running the Master Application Locally
-Configure IP Addresses:
+#### Run the App
 
-On your local computer, open the coordinator/app.py file.
+1. Open a terminal on your local PC and navigate to the coordinator folder.
 
-Update the WORKER_URLS list with the public IPs of your AWS servers.
+2. Create and activate a virtual environment:
+   ```bash
+   python -m venv venv
+   
+   # On Windows:
+   .\venv\Scripts\activate
+   
+   # On macOS/Linux:
+   source venv/bin/activate
+   ```
 
-Run the App:
+3. Install dependencies and run the application:
+   ```bash
+   pip install -r requirements.txt
+   streamlit run app.py
+   ```
 
-Open a terminal on your local PC and navigate to the coordinator folder.
+4. Your web browser will open with the application ready to use.
 
-Create and activate a virtual environment:
+## 🐛 Troubleshooting Common Errors
 
-python -m venv venv
-# On Windows:
-.\venv\Scripts\activate
-# On macOS/Linux:
-source venv/bin/activate
+| Error Message | Cause | Solution |
+|---------------|-------|----------|
+| Permission denied (publickey) | The .pem key file is not secured properly on your local machine | On Windows, go to File Properties > Security > Advanced, disable inheritance, and remove all users except your own |
+| externally-managed-environment | Newer Ubuntu versions prevent pip from installing packages globally | Always create and activate a virtual environment (`python3 -m venv venv` and `source venv/bin/activate`) before running `pip install` |
+| Connection Refused or Timeout in Streamlit App | The worker application is not running on the AWS server, or the AWS Security Group is blocking the port | SSH into the worker server and check `ps aux` or restart the worker process |
+| Failed building wheel for Pillow | The AWS server is missing system-level libraries needed to compile the Python Pillow package | Install the required dependencies on the server before running pip install: `sudo apt install libjpeg-dev zlib1g-dev -y` |
 
-Install dependencies and run the application:
+## 💡 Future Suggestions
 
-pip install -r requirements.txt
-streamlit run app.py
+- **Implement a Load Balancer**: Add a service like Nginx to sit in front of the workers. This would allow you to scale the number of workers dynamically without changing the master's configuration.
 
-Your web browser will open with the application ready to use.
+- **Containerize the Deployment**: Use the existing Dockerfiles to deploy the workers as containers to a service like AWS Elastic Container Service (ECS) or Google Cloud Run for easier management and auto-scaling.
 
-🐛 Troubleshooting Common Errors
-Error Message
+- **Add More Workers**: Create new workers for different tasks (e.g., video processing, text analysis) to make the system even more powerful and heterogeneous.
 
-Cause
+## 📁 Project Structure
 
-Solution
+```
+heterogeneous-distributed-task-processor/
+├── coordinator/
+│   ├── app.py
+│   └── requirements.txt
+├── worker-python/
+│   ├── app.py
+│   ├── requirements.txt
+│   └── Dockerfile
+├── worker-nodejs/
+│   ├── server.js
+│   ├── package.json
+│   └── Dockerfile
+└── README.md
+```
 
-Permission denied (publickey)
+## 🚀 Technologies Used
 
-The .pem key file is not secured properly on your local machine.
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![AWS](https://img.shields.io/badge/Amazon_AWS-232F3E?style=for-the-badge&logo=amazon-aws&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)
 
-On Windows, go to File Properties > Security > Advanced, disable inheritance, and remove all users except your own.
+---
 
-externally-managed-environment
+**Created by Danish Akhtar**
 
-Newer Ubuntu versions prevent pip from installing packages globally.
-
-Always create and activate a virtual environment (python3 -m venv venv and source venv/bin/activate) before running pip install.
-
-Connection Refused or Timeout in Streamlit App
-
-The worker application is not running on the AWS server, or the AWS Security Group is blocking the port.
-
-SSH into the worker server and check `ps aux
-
-Failed building wheel for Pillow
-
-The AWS server is missing system-level libraries needed to compile the Python Pillow package.
-
-Install the required dependencies on the server before running pip install: sudo apt install libjpeg-dev zlib1g-dev -y
-
-💡 Future Suggestions
-Implement a Load Balancer: Add a service like Nginx to sit in front of the workers. This would allow you to scale the number of workers dynamically without changing the master's configuration.
-
-Containerize the Deployment: Use the existing Dockerfiles to deploy the workers as containers to a service like AWS Elastic Container Service (ECS) or Google Cloud Run for easier management and auto-scaling.
-
-Add More Workers: Create new workers for different tasks (e.g., video processing, text analysis) to make the system even more powerful and heterogeneous.
-
-<div align="center">
-<hr>
-<p>Created by <b>Danish Akhtar</b></p>
-<a href="https://www.google.com/search?q=https://github.com/danish296">
-<img src="https://www.google.com/search?q=https://img.shields.io/badge/GitHub-100000%3Fstyle%3Dfor-the-badge%26logo%3Dgithub%26logoColor%3Dwhite" alt="GitHub Profile"/>
-</a>
-</div>
+[![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/danish296)
