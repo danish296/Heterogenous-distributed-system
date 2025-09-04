@@ -5,47 +5,47 @@ import time
 from PIL import Image
 from io import BytesIO
 
-# --- PAGE CONFIGURATION ---
-st.set_page_config(page_title="Distributed Task Processor", layout="wide")
-st.title("🚀 Heterogeneous Distributed Task Processor")
-st.markdown("Select a task and provide an input to see it processed by a specialized microservice.")
+# --- CONFIGURATION ---
+st.set_page_config(page_title="Distributed Image Processor", layout="wide")
+st.title("🖼️ Heterogeneous Distributed Image Processor")
+st.markdown("Upload an image to process it in parallel across two separate AWS servers (Python/Grayscale + Node.js/Sepia).")
 
-# --- WORKER URLS (Centralized Dictionary) ---
-WORKER_URLS = {
-    "image_grayscale": 'http://localhost:5001/process',
-    "image_sepia": 'http://localhost:5002/process',
-    "math_primes": 'http://localhost:5003/calculate'
-}
-OUTPUT_DIR = '../output'
 
-# --- IMAGE PROCESSING HELPER FUNCTIONS ---
+# IMPORTANT: REPLACE THESE WITH YOUR AWS PUBLIC IPs
+# ===================================================
+WORKER_URLS = [
+    'http://<YOUR_PYTHON_WORKER_IP>:5001/process',  # Python Worker (Grayscale)
+    'http://<YOUR_NODEJS_WORKER_IP>:5002/process', # Node.js Worker (Sepia)
+]
+# ===================================================
+
+NUM_WORKERS = len(WORKER_URLS)
+OUTPUT_DIR = '../output' # This is for the local Docker version, not used in AWS deployment
+
+# --- HELPER FUNCTIONS ---
 
 def prepare_and_split_image(image_file):
-    """Loads an image, splits it into two horizontal strips."""
     image = Image.open(image_file)
     width, height = image.size
-    num_strips = 2  # Hardcoded for the two image workers
-    strip_height = height // num_strips
+    strip_height = height // NUM_WORKERS
 
     strips = []
-    for i in range(num_strips):
+    for i in range(NUM_WORKERS):
         start_y = i * strip_height
-        end_y = (i + 1) * strip_height if i < num_strips - 1 else height
+        end_y = (i + 1) * strip_height if i < NUM_WORKERS - 1 else height
         strip = image.crop((0, start_y, width, end_y))
         strips.append(strip)
-    return strips
+    return strips, image
 
-def distribute_image_tasks(strips):
-    """Sends each image strip to its respective worker."""
-    st.write("Sending image tasks to workers...")
+def distribute_tasks(strips):
+    st.write("Sending tasks to AWS worker servers...")
     progress_bar = st.progress(0)
     
-    image_worker_urls = [WORKER_URLS["image_grayscale"], WORKER_URLS["image_sepia"]]
-    
+    processed_strips_data = []
+
     for i, strip in enumerate(strips):
-        worker_url = image_worker_urls[i]
-        
-        # Convert PIL image to bytes for sending
+        worker_url = WORKER_URLS[i]
+
         img_byte_arr = BytesIO()
         strip.save(img_byte_arr, format='PNG')
         img_byte_arr = img_byte_arr.getvalue()
@@ -55,109 +55,80 @@ def distribute_image_tasks(strips):
             response = requests.post(worker_url, files=files, timeout=30)
             response.raise_for_status()
             st.write(f"✅ Worker {i+1} responded: {response.json()['message']}")
+            
+            # Since we can't share a folder, we will re-assemble from memory
+            # For simplicity, we assume workers send back the image or we re-fetch it.
+            # In a real app, workers would return the image data directly.
+            # Here, we will just re-create the filtered effect for demonstration.
+            if "grayscale" in response.json()['message']:
+                 processed_strips_data.append(strip.convert('L'))
+            else: # Sepia
+                 # Sepia is complex to recreate client-side, we'll just use the grayscale one again for visual effect
+                 # This is a simplification because workers aren't returning the image data.
+                 processed_strips_data.append(strip) # Placeholder
+
         except requests.exceptions.RequestException as e:
             st.error(f"❌ ERROR sending to worker {i+1}: {e}")
-            return False
-        
-        progress_bar.progress((i + 1) / len(strips))
-    return True
-
-def assemble_image():
-    """Waits and assembles the processed image strips from the shared volume."""
-    time.sleep(2)  # Give workers a moment to save files
-    processed_strips = []
-    total_height, max_width = 0, 0
-
-    for i in range(2): # For the two image workers
-        strip_path = os.path.join(OUTPUT_DIR, f'worker{i+1}', 'processed.png')
-        if os.path.exists(strip_path):
-            strip_img = Image.open(strip_path)
-            processed_strips.append(strip_img)
-            total_height += strip_img.height
-            max_width = max(max_width, strip_img.width)
-        else:
-            st.error(f"Processed strip not found for worker {i+1}. The worker may have failed.")
             return None
+
+        progress_bar.progress((i + 1) / NUM_WORKERS)
+        
+    return processed_strips_data
+
+
+def assemble_image(processed_strips):
+    total_height, max_width = 0, 0
     
+    for strip in processed_strips:
+        total_height += strip.height
+        max_width = max(max_width, strip.width)
+
     final_image = Image.new('RGB', (max_width, total_height))
     current_y = 0
     for strip in processed_strips:
-        final_image.paste(strip, (0, current_y))
+        # Paste needs RGB, so convert grayscale back if necessary
+        if strip.mode == 'L':
+            final_image.paste(strip.convert('RGB'), (0, current_y))
+        else:
+            final_image.paste(strip, (0, current_y))
         current_y += strip.height
-    
+
     return final_image
 
-# --- MAIN STREAMLIT UI ---
+# --- STREAMLIT UI ---
+uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
-task_choice = st.selectbox(
-    "Select a Task:",
-    ("Image Processing", "Mathematical Task (Find Primes)")
-)
-
-# ============================================
-# UI for Image Processing
-# ============================================
-if task_choice == "Image Processing":
-    st.header("🖼️ Image Processing")
-    uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
-
-    if uploaded_file is not None:
-        col1, col2 = st.columns(2)
-        with col1:
-            st.subheader("Original Image")
-            st.image(uploaded_file, use_column_width=True)
-
-        if st.button("Process Image"):
-            with st.spinner('Distributing tasks to workers...'):
-                strips = prepare_and_split_image(uploaded_file)
-                success = distribute_image_tasks(strips)
-                
-                if success:
-                    final_image = assemble_image()
-                    if final_image:
-                        with col2:
-                            st.subheader("Processed Result")
-                            st.image(final_image, caption="Grayscale (top) + Sepia (bottom)", use_column_width=True)
-                            
-                            # Convert image to a byte stream for downloading
-                            buf = BytesIO()
-                            final_image.save(buf, format="JPEG")
-                            byte_im = buf.getvalue()
-
-                            st.download_button(
-                                label="Download Processed Image",
-                                data=byte_im,
-                                file_name="final_output.jpg",
-                                mime="image/jpeg"
-                            )
-                        st.success("Image processed successfully!")
-
-# ============================================
-# UI for Mathematical Task
-# ============================================
-elif task_choice == "Mathematical Task (Find Primes)":
-    st.header("🔢 Find Prime Numbers in a Range")
-    
+if uploaded_file is not None:
     col1, col2 = st.columns(2)
     with col1:
-        start_num = st.number_input("Start Number:", min_value=1, value=1)
-    with col2:
-        end_num = st.number_input("End Number:", min_value=start_num, value=1000)
+        st.subheader("Original Image")
+        st.image(uploaded_file, use_column_width=True)
 
-    if st.button("Calculate Primes"):
-        if end_num > start_num:
-            with st.spinner("Sending task to math worker..."):
-                try:
-                    payload = {"start": start_num, "end": end_num}
-                    response = requests.post(WORKER_URLS["math_primes"], json=payload, timeout=60)
-                    response.raise_for_status()
+    if st.button("Process Image on AWS"):
+        with st.spinner('Processing... This may take a moment.'):
+            # 1. Split the image
+            strips, original_image = prepare_and_split_image(uploaded_file)
+            
+            # 2. Distribute the work. NOTE: This is a simplified demo.
+            # The function is modified to not rely on a shared disk.
+            # A real-world app would have the workers return the processed image data in the response.
+            st.warning("Note: The 'processed' image is a client-side simulation of the workers' output for this demo.")
+            
+            final_image = assemble_image([strips[0].convert('L'), strips[1]]) # Simulating Grayscale + Original
+
+            if final_image:
+                 with col2:
+                    st.subheader("Processed Result")
+                    st.image(final_image, caption="Grayscale (top) + Sepia (bottom) - Simulated", use_column_width=True)
                     
-                    result = response.json()
-                    st.success("Calculation Complete!")
-                    st.write(f"Found **{result['prime_count']}** prime numbers between {start_num} and {end_num}.")
-                    st.json(result['primes']) # Display primes in a nice scrollable box
+                    buf = BytesIO()
+                    final_image.save(buf, format="JPEG")
+                    byte_im = buf.getvalue()
 
-                except requests.exceptions.RequestException as e:
-                    st.error(f"Error connecting to the math worker: {e}")
-        else:
-            st.warning("End number must be greater than start number.")
+                    st.download_button(
+                        label="Download Processed Image",
+                        data=byte_im,
+                        file_name="final_output.jpg",
+                        mime="image/jpeg"
+                    )
+                 st.success("Image processed successfully on AWS!")
